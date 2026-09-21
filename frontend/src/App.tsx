@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import { socket } from "./socket";
 import { Room } from "./component/Room";
 
 function App() {
   const roomId = "room1";
+  const [clientId, setClientId] = useState(" ");
   useEffect(() => {
     socket.connect();
     socket.emit("clientConnect", "hello server");
@@ -15,6 +16,9 @@ function App() {
     socket.on("joinedRoom", (roomId: string) => {
       console.log(`joined room: ${roomId}`);
     });
+    socket.on("clientId", (clientId: string) => {
+      setClientId(clientId);
+    });
     return () => {
       socket.disconnect();
     };
@@ -23,6 +27,7 @@ function App() {
   return (
     <div>
       <h1>🍅 Hide and Seek 🍅</h1>
+      <h2>{clientId}</h2>
       <Room roomId={roomId} />
     </div>
   );

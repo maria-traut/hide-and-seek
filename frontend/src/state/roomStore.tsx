@@ -7,6 +7,8 @@ type RoomState = {
   results: Record<string, number>;
   connected: boolean;
   roomId: string | null;
+  status: "empty" | "waiting" | "full";
+  players: string[];
   joinRoom: (roomId: string) => void;
   //   action: (option: string) => void;
 };
@@ -16,7 +18,7 @@ export const useRoomStore = create<RoomState>()((set, get) => {
     set({ connected: true });
 
     const { roomId } = get();
-    console.log(roomId);
+    console.log("use store room id", roomId);
     if (roomId) socket.emit("joinRoom", roomId);
   });
   socket.on("disconnect", () => set({ connected: false }));
@@ -26,6 +28,8 @@ export const useRoomStore = create<RoomState>()((set, get) => {
     results: {},
     connected: false,
     roomId: null,
+    status: "empty",
+    players: [],
 
     joinRoom: (roomId) => {
       console.log(`room store join room ${roomId}`);
@@ -33,8 +37,9 @@ export const useRoomStore = create<RoomState>()((set, get) => {
       console.log("get", get());
       if (socket.connected) {
         console.log("socket connected");
-        socket.emit("joinedRoom", roomId);
+        socket.emit("joinRoom", roomId);
       } else {
+        console.log("socket not connected yet");
         socket.connect();
       }
     },
