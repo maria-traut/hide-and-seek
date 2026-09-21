@@ -1,24 +1,29 @@
 import { create } from "zustand";
-import { io } from "socket.io-client";
-
-const socket = io("http://localhost:3000", { autoConnect: false });
+import { socket } from "../socket";
 
 type RoomState = {
   results: Record<string, number>;
   connected: boolean;
   roomId: string | null;
   status: "empty" | "waiting" | "full";
-  players: string[];
+  players: Record<string, number>;
   joinRoom: (roomId: string) => void;
-  //   action: (option: string) => void;
+  // action: (option: string) => void;
 };
 
-export const useRoomStore = create<RoomState>()((set, get) => {
+type Action = {
+  updateResults: (results: RoomState["results"]) => void;
+};
+
+export const useRoomStore = create<RoomState & Action>()((set, get) => {
   socket.on("connect", () => {
     set({ connected: true });
 
-    const { roomId } = get();
+    const { roomId, role } = get();
+    const allGet = get();
+    console.log("all get", allGet);
     console.log("use store room id", roomId);
+    console.log("use store role", role);
     if (roomId) socket.emit("joinRoom", roomId);
   });
   socket.on("disconnect", () => set({ connected: false }));
@@ -43,7 +48,9 @@ export const useRoomStore = create<RoomState>()((set, get) => {
         socket.connect();
       }
     },
-
+    updateResults: (results) => {
+      set({ results });
+    },
     // action: (option) => socket.emit("action", { roomId: get().roomId, option }),
   };
 });

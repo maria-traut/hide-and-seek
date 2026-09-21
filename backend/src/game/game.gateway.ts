@@ -23,10 +23,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
+    this.gameService.addPlayer(client);
   }
 
   handleDisconnect(client: Socket) {
     console.log(`client disconnected: ${client.id}`);
+    this.gameService.removePlayer(client);
   }
 
   @SubscribeMessage('clientConnect')
@@ -38,11 +40,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     socket.emit('responseFromServer', 'hello client');
   }
 
-  @SubscribeMessage('joinRoom')
-  handleJoin(@MessageBody() roomId: string, @ConnectedSocket() socket: Socket) {
-    void socket.join(roomId);
-    void this.gameService.getSockets(roomId, this.server);
-    console.log(`${socket.id} joined room ${roomId}`);
-    socket.emit('clientId', socket.id);
-  }
+  // @SubscribeMessage('joinRoom')
+  // handleJoin(@MessageBody() roomId: string, @ConnectedSocket() socket: Socket) {
+  //   void socket.join(roomId);
+  //   void this.gameService.getSockets(roomId, this.server);
+  //   void this.gameService.addPlayer(socket.id);
+
+  //   console.log(`${socket.id} joined room ${roomId}`);
+  //   socket.emit('clientId', socket.id);
+  // }
 }
