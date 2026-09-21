@@ -5,6 +5,10 @@ import { socket } from "./socket";
 function App() {
   useEffect(() => {
     socket.connect();
+    socket.emit("clientConnect", "hello server");
+    socket.on("responseFromServer", (textFromServer: string) => {
+      console.log(textFromServer);
+    });
 
     return () => {
       socket.disconnect();
