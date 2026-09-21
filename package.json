@@ -1,0 +1,11 @@
+{
+  "name": "hide-and-seek",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "bun run --filter backend --filter frontend dev"
+  }
+}
