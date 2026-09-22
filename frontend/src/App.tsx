@@ -26,9 +26,11 @@ function App() {
 
   return (
     <div>
-      <h1>🍅 Hide and Seek 🍅</h1>
+      <h1 className="text-red-300 [text-shadow:0_0_6px_#f87171]">
+        🍅 Hide and Seek 🍅
+      </h1>
       <h2>{clientId}</h2>
-      <Room roomId={roomId} />
+      <Room roomId={roomId} clientId={clientId} />
     </div>
   );
 }

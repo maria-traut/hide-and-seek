@@ -1,12 +1,15 @@
 import { create } from "zustand";
 import { socket } from "../socket";
+import type { GameData, PlayerData } from "../component/Room";
 
 type RoomState = {
   results: Record<string, number>;
   connected: boolean;
   roomId: string | null;
-  status: "empty" | "waiting" | "full";
-  players: Record<string, number>;
+  status: "running" | "finished" | "waiting";
+  players: Record<string, PlayerData>;
+  startTime: number;
+  duration: number;
 };
 
 type Action = {
@@ -19,14 +22,15 @@ const initialState: RoomState = {
   results: {},
   connected: false,
   roomId: null,
-  status: "empty",
+  status: "waiting",
   players: {},
+  startTime: 0,
+  duration: 0,
 };
 
 export const useRoomStore = create<RoomState & Action>()((set, get) => {
   socket.on("connect", () => {
     set({ connected: true });
-
     const { roomId } = get();
     const allGet = get();
     console.log("all get", allGet);
@@ -34,6 +38,35 @@ export const useRoomStore = create<RoomState & Action>()((set, get) => {
   });
   socket.on("disconnect", () => set({ connected: false }));
   socket.on("results", (results: Record<string, number>) => set({ results }));
+
+  socket.on("gameData", (gameData: GameData) => {
+    const { duration, startTime, status } = gameData;
+    console.log("room store game data: ", duration, startTime, status);
+    set({ duration, startTime, status });
+  });
+
+  // socket.on("playerData", (playerData: PlayerData) => {
+  //   const { role, clientId, position, roomId, opponentPosition } = playerData;
+  //   console.log(
+  //     "room store player data: ",
+  //     role,
+  //     clientId,
+  //     position,
+  //     roomId,
+  //     opponentPosition,
+  //   );
+  //   set({ role, clientId, position, roomId, opponentPosition });
+  // });
+
+  socket.on("playerData", (playerData: PlayerData) => {
+    console.log("room store player data: ", playerData);
+    set((state) => ({
+      players: {
+        ...state.players,
+        [playerData.clientId]: playerData,
+      },
+    }));
+  });
 
   return {
     ...initialState,
