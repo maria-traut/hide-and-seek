@@ -12,12 +12,19 @@ type Position = {
 type Player = {
   roomId: string;
   role?: Role;
-  position: Position;
+  position?: Position;
+};
+
+type Game = {
+  duration: number;
+  startTime?: number;
+  status: 'running' | 'finished' | 'waiting';
 };
 
 @Injectable()
 export class GameService {
   private readonly players = new Map<string, Player>();
+  private readonly game = new Map<string, Game>();
 
   private waitingRoom: string | null = null;
 
@@ -82,7 +89,7 @@ export class GameService {
     }
   }
 
-  private startGame(client: Socket, roomId: string) {
+  private async startGame(client: Socket, roomId: string) {
     const room = client.nsp.adapter.rooms.get(roomId);
 
     if (!room || room.size !== 2) {
@@ -90,6 +97,12 @@ export class GameService {
     }
     console.log('startGame', room);
     const [seekerId, hiderId] = [...room];
+
+    this.game.set(roomId, {
+      duration: 30,
+      startTime: new Date().getTime(),
+      status: 'running',
+    });
 
     this.players.set(seekerId, {
       roomId,
@@ -100,6 +113,8 @@ export class GameService {
       roomId,
       role: 'hider',
     });
+
+    // client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
 
     client.nsp.to(seekerId).emit('playerData', {
       role: 'seeker',
@@ -115,7 +130,31 @@ export class GameService {
       roomId: roomId,
       opponentPosition: { x: 0, y: 0 },
     });
+    await this.countDown(30, client, roomId);
+    client.nsp.to(roomId).emit('game-start');
+  }
 
-    // nsp.to(roomId).emit('game-start');
+  private async countDown(
+    duration: number,
+    client: Socket,
+    roomId: string,
+  ): Promise<void> {
+    return new Promise((resolve) => {
+      const interval = setInterval(() => {
+        this.game.set(roomId, { duration, status: 'running' });
+        console.log('countDown', duration);
+        --duration;
+
+        if (duration < 0) {
+          clearInterval(interval);
+          resolve();
+        } else if (duration < 1) {
+          this.game.set(roomId, { duration, status: 'finished' });
+          client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
+        } else {
+          client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
+        }
+      }, 100);
+    });
   }
 }
