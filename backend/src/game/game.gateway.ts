@@ -39,4 +39,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log('textFromClient', textFromClient);
     socket.emit('responseFromServer', 'hello client');
   }
+
+  @SubscribeMessage('action')
+  handleClientAction(
+    @MessageBody()
+    actionData: { roomId: string; movement: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    console.log(
+      'Client Request Action',
+      actionData.movement,
+      actionData.roomId,
+    );
+    this.gameService.movePlayer(client, actionData.movement);
+  }
 }

@@ -15,7 +15,7 @@ type RoomState = {
 type Action = {
   updateResults: (results: RoomState["results"]) => void;
   joinRoom: (roomId: string) => void;
-  // action: (option: string) => void;
+  action?: (movement: string, clientId: string) => void;
 };
 
 const initialState: RoomState = {
@@ -67,6 +67,7 @@ export const useRoomStore = create<RoomState & Action>()((set, get) => {
       },
     }));
   });
+  // console.log(clientId);
 
   return {
     ...initialState,
@@ -85,6 +86,7 @@ export const useRoomStore = create<RoomState & Action>()((set, get) => {
     updateResults: (results) => {
       set({ results });
     },
-    // action: (option) => socket.emit("action", { roomId: get().roomId, option }),
+    // action: (movement, clientId) =>
+    //   socket.emit("action", { roomId: get().roomId, movement, clientId }),
   };
 });

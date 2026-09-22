@@ -48,7 +48,7 @@ export function Room({
   const player = useRoomStore((s) => s.players[clientId]);
   // const startTime = useRoomStore((s) => s.startTime);
   const status = useRoomStore((s) => s.status);
-  //   const action = useRoomStore((s) => s.action);
+  const action = useRoomStore((s) => s.action);
   // const [clientStates, setClientStates] = useState(
   //   new Map<string, ClientState>(),
   // );
@@ -57,30 +57,41 @@ export function Room({
   useEffect(() => {
     updateResults({ test: 4 });
     joinRoom(roomId);
-
-    // socket.on("playerData", (playerData: PlayerData) => {
-    //   const { role, clientId, position, opponentPosition } = playerData;
-    //   console.log(`you are ${role}`);
-
-    //   setClientStates((prev) => {
-    //     const next = new Map(prev);
-
-    //     next.set(clientId, {
-    //       role,
-    //       clientId,
-    //       position,
-    //       roomId,
-    //       opponentPosition,
-    //     });
-
-    //     return next;
-    //   });
-    // });
-
     socket.on("game-start", () => {
       console.log("game-start");
     });
   }, [updateResults, connected, roomId, joinRoom]);
+
+  useEffect(() => {
+    function handleKeydown(event: KeyboardEvent) {
+      // if (event.key === "ArrowUp") {
+      //   console.log("key", event.key);
+      //   action("up", clientId);
+      // } else if (event.key === "ArrowDown") {
+      //   console.log("key", event.key);
+      //   action("down", clientId);
+      // } else if (event.key === "ArrowLeft") {
+      //   console.log("key", event.key);
+      //   action("left", clientId);
+      // } else if (event.key === "ArrowRight") {
+      //   console.log("key", event.key);
+      //   action("right", clientId);
+      // }
+      if (
+        event.key === "ArrowUp" ||
+        event.key === "ArrowDown" ||
+        event.key === "ArrowLeft" ||
+        event.key === "ArrowRight"
+      ) {
+        socket.emit("action", {
+          roomId,
+          movement: event.key,
+        });
+      }
+    }
+
+    window.addEventListener("keydown", handleKeydown);
+  }, [action, roomId]);
 
   // const clientState = Array.from(clientStates.entries());
   // const playerData = clientStates.values().next().value;

@@ -89,6 +89,10 @@ export class GameService {
     }
   }
 
+  movePlayer(client: Socket, movement: string) {
+    console.log('Service Movement', movement);
+  }
+
   private async startGame(client: Socket, roomId: string) {
     const room = client.nsp.adapter.rooms.get(roomId);
 
