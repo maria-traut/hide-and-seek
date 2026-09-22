@@ -7,39 +7,40 @@ type RoomState = {
   roomId: string | null;
   status: "empty" | "waiting" | "full";
   players: Record<string, number>;
-  joinRoom: (roomId: string) => void;
-  // action: (option: string) => void;
 };
 
 type Action = {
   updateResults: (results: RoomState["results"]) => void;
+  joinRoom: (roomId: string) => void;
+  // action: (option: string) => void;
+};
+
+const initialState: RoomState = {
+  results: {},
+  connected: false,
+  roomId: null,
+  status: "empty",
+  players: {},
 };
 
 export const useRoomStore = create<RoomState & Action>()((set, get) => {
   socket.on("connect", () => {
     set({ connected: true });
 
-    const { roomId, role } = get();
+    const { roomId } = get();
     const allGet = get();
     console.log("all get", allGet);
-    console.log("use store room id", roomId);
-    console.log("use store role", role);
     if (roomId) socket.emit("joinRoom", roomId);
   });
   socket.on("disconnect", () => set({ connected: false }));
   socket.on("results", (results: Record<string, number>) => set({ results }));
 
   return {
-    results: {},
-    connected: false,
-    roomId: null,
-    status: "empty",
-    players: [],
+    ...initialState,
 
     joinRoom: (roomId) => {
-      console.log(`room store join room ${roomId}`);
+      console.log("room store, join room:", roomId);
       set({ roomId });
-      console.log("get", get());
       if (socket.connected) {
         console.log("socket connected");
         socket.emit("joinRoom", roomId);

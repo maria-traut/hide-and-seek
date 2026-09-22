@@ -9,8 +9,6 @@ type ClientState = {
   role: PlayerRole;
 };
 
-const clientState = new Map<string, ClientState>();
-
 export function Room({ roomId }: { roomId: string }) {
   const results = useRoomStore((s) => s.results);
   const connected = useRoomStore((s) => s.connected);
@@ -24,17 +22,12 @@ export function Room({ roomId }: { roomId: string }) {
   useEffect(() => {
     updateResults({ test: 4 });
     joinRoom(roomId);
-    console.log("room use effect");
-    console.log("room.tsx connected", connected);
-    socket.on("clientId", (clientId: string) => {
-      // socket.emit();
-      console.log("room.tsx client id", clientId);
-    });
+	
     socket.on("role", (roleData: { role: PlayerRole; clientId: string }) => {
       const { clientId, role } = roleData;
       console.log(`you are ${role}`);
-      // clientState.set(clientId, { roomId, role });
-      setClientStates((prev) => {
+
+	  setClientStates((prev) => {
         const next = new Map(prev);
 
         next.set(clientId, {
