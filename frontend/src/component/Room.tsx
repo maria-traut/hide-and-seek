@@ -1,12 +1,29 @@
 import { useEffect, useState } from "react";
 import { useRoomStore } from "../state/roomStore";
 import { socket } from "../socket";
+import GameGrid from "./GameGrid";
 
 type PlayerRole = "seeker" | "hider";
 
+type Position = {
+  x: number;
+  y: number;
+};
+
 type ClientState = {
-  roomId: string;
   role: PlayerRole;
+  clientId: string;
+  position: Position;
+  roomId: string;
+  opponentPosition: Position;
+};
+
+export type PlayerData = {
+  role: PlayerRole;
+  clientId: string;
+  position: Position;
+  roomId: string;
+  opponentPosition: Position;
 };
 
 export function Room({ roomId }: { roomId: string }) {
@@ -22,17 +39,20 @@ export function Room({ roomId }: { roomId: string }) {
   useEffect(() => {
     updateResults({ test: 4 });
     joinRoom(roomId);
-	
-    socket.on("role", (roleData: { role: PlayerRole; clientId: string }) => {
-      const { clientId, role } = roleData;
+
+    socket.on("playerData", (roleData: PlayerData) => {
+      const { role, clientId, position, opponentPosition } = roleData;
       console.log(`you are ${role}`);
 
-	  setClientStates((prev) => {
+      setClientStates((prev) => {
         const next = new Map(prev);
 
         next.set(clientId, {
-          roomId,
           role,
+          clientId,
+          position,
+          roomId,
+          opponentPosition,
         });
 
         return next;
@@ -40,6 +60,9 @@ export function Room({ roomId }: { roomId: string }) {
     });
   }, [updateResults, connected, roomId, joinRoom]);
 
+  const playerData = clientStates.values().next().value;
+  console.log("client states values", clientStates.values().next().value);
+  console.log("client states", clientStates);
   return (
     <div>
       <span>{connected ? "Live" : "Reconnecting..."}</span>
@@ -48,7 +71,10 @@ export function Room({ roomId }: { roomId: string }) {
       {Array.from(clientStates.entries()).length
         ? Array.from(clientStates.entries()).map(([clientId, state]) => (
             <div key={clientId}>
-              Client: {clientId} — Room: {state.roomId} — Role: {state.role}
+              <section>
+                Client: {clientId} — Room: {state.roomId} — Role: {state.role}
+              </section>
+              <GameGrid playerData={playerData} />
             </div>
           ))
         : "Waiting..."}
@@ -56,3 +82,8 @@ export function Room({ roomId }: { roomId: string }) {
     </div>
   );
 }
+
+// const [key, value] = map.entries().next().value;
+
+// console.log(key);   // "foo"
+// console.log(value); // 10

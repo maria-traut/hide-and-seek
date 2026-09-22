@@ -4,9 +4,15 @@ import { Socket } from 'socket.io';
 
 type Role = 'seeker' | 'hider';
 
+type Position = {
+  x: number | undefined;
+  y: number | undefined;
+};
+
 type Player = {
   roomId: string;
   role?: Role;
+  position: Position;
 };
 
 @Injectable()
@@ -32,6 +38,7 @@ export class GameService {
 
     this.players.set(client.id, {
       roomId,
+      position: { x: undefined, y: undefined },
     });
 
     const room = client.nsp.adapter.rooms.get(roomId);
@@ -94,8 +101,20 @@ export class GameService {
       role: 'hider',
     });
 
-    client.nsp.to(seekerId).emit('role', { role: 'seeker', clientId: seekerId });
-    client.nsp.to(hiderId).emit('role', { role: 'hider', clientId: hiderId });
+    client.nsp.to(seekerId).emit('playerData', {
+      role: 'seeker',
+      clientId: seekerId,
+      position: { x: 0, y: 0 },
+      roomId: roomId,
+      opponentPosition: { x: 9, y: 9 },
+    });
+    client.nsp.to(hiderId).emit('playerData', {
+      role: 'hider',
+      clientId: hiderId,
+      position: { x: 9, y: 9 },
+      roomId: roomId,
+      opponentPosition: { x: 0, y: 0 },
+    });
 
     // nsp.to(roomId).emit('game-start');
   }
