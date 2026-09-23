@@ -10,14 +10,6 @@ type Position = {
   y: number;
 };
 
-// type ClientState = {
-//   role: PlayerRole;
-//   clientId: string;
-//   position: Position;
-//   roomId: string;
-//   opponentPosition: Position;
-// };
-
 export type PlayerData = {
   role: PlayerRole;
   clientId: string;
@@ -46,12 +38,9 @@ export function Room({
   const duration = useRoomStore((s) => s.duration);
   const players = useRoomStore((s) => s.players);
   const player = useRoomStore((s) => s.players[clientId]);
-  // const startTime = useRoomStore((s) => s.startTime);
   const status = useRoomStore((s) => s.status);
   const action = useRoomStore((s) => s.action);
-  // const [clientStates, setClientStates] = useState(
-  //   new Map<string, ClientState>(),
-  // );
+
   console.log("room.tsx players", players);
   console.log("room.tsx player", player);
   useEffect(() => {
@@ -64,19 +53,6 @@ export function Room({
 
   useEffect(() => {
     function handleKeydown(event: KeyboardEvent) {
-      // if (event.key === "ArrowUp") {
-      //   console.log("key", event.key);
-      //   action("up", clientId);
-      // } else if (event.key === "ArrowDown") {
-      //   console.log("key", event.key);
-      //   action("down", clientId);
-      // } else if (event.key === "ArrowLeft") {
-      //   console.log("key", event.key);
-      //   action("left", clientId);
-      // } else if (event.key === "ArrowRight") {
-      //   console.log("key", event.key);
-      //   action("right", clientId);
-      // }
       if (
         event.key === "ArrowUp" ||
         event.key === "ArrowDown" ||
@@ -93,11 +69,6 @@ export function Room({
     window.addEventListener("keydown", handleKeydown);
   }, [action, roomId]);
 
-  // const clientState = Array.from(clientStates.entries());
-  // const playerData = clientStates.values().next().value;
-  // console.log("client state client state", clientState);
-  // console.log("client states values", clientStates.values().next().value);
-  // console.log("client states", clientStates);
   return (
     <div>
       <h3 className="text-2xl text-red-400 dark:text-red-100">

@@ -134,7 +134,9 @@ export class GameService {
       roomId: roomId,
       opponentPosition: { x: 0, y: 0 },
     });
+
     await this.countDown(30, client, roomId);
+
     client.nsp.to(roomId).emit('game-start');
   }
 
@@ -147,7 +149,7 @@ export class GameService {
       const interval = setInterval(() => {
         this.game.set(roomId, { duration, status: 'running' });
         console.log('countDown', duration);
-        --duration;
+        duration--;
 
         if (duration < 0) {
           clearInterval(interval);
@@ -158,7 +160,7 @@ export class GameService {
         } else {
           client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
         }
-      }, 100);
+      }, 1000);
     });
   }
 }

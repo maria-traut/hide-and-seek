@@ -33,7 +33,7 @@ export const useRoomStore = create<RoomState & Action>()((set, get) => {
     set({ connected: true });
     const { roomId } = get();
     const allGet = get();
-    console.log("all get", allGet);
+    console.log("useRoomStore contents", allGet);
     if (roomId) socket.emit("joinRoom", roomId);
   });
   socket.on("disconnect", () => set({ connected: false }));
@@ -45,19 +45,6 @@ export const useRoomStore = create<RoomState & Action>()((set, get) => {
     set({ duration, startTime, status });
   });
 
-  // socket.on("playerData", (playerData: PlayerData) => {
-  //   const { role, clientId, position, roomId, opponentPosition } = playerData;
-  //   console.log(
-  //     "room store player data: ",
-  //     role,
-  //     clientId,
-  //     position,
-  //     roomId,
-  //     opponentPosition,
-  //   );
-  //   set({ role, clientId, position, roomId, opponentPosition });
-  // });
-
   socket.on("playerData", (playerData: PlayerData) => {
     console.log("room store player data: ", playerData);
     set((state) => ({
@@ -67,19 +54,16 @@ export const useRoomStore = create<RoomState & Action>()((set, get) => {
       },
     }));
   });
-  // console.log(clientId);
 
   return {
     ...initialState,
 
     joinRoom: (roomId) => {
-      console.log("room store, join room:", roomId);
+      console.log("room store", "join room", roomId);
       set({ roomId });
       if (socket.connected) {
-        console.log("socket connected");
         socket.emit("joinRoom", roomId);
       } else {
-        console.log("socket not connected yet");
         socket.connect();
       }
     },
