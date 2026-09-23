@@ -26,7 +26,7 @@ function App() {
 
   return (
     <div>
-      <h1 className="text-red-300 [text-shadow:0_0_6px_#f87171]">
+      <h1 className="text-red-300 [text-shadow:0_0_3px_#f87171]">
         🍅 Hide and Seek 🍅
       </h1>
       <h2>{clientId}</h2>

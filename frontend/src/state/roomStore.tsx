@@ -10,6 +10,8 @@ type RoomState = {
   players: Record<string, PlayerData>;
   startTime: number;
   duration: number;
+  rows: number;
+  columns: number;
 };
 
 type Action = {
@@ -26,6 +28,8 @@ const initialState: RoomState = {
   players: {},
   startTime: 0,
   duration: 0,
+  rows: 0,
+  columns: 0,
 };
 
 export const useRoomStore = create<RoomState & Action>()((set, get) => {
@@ -40,9 +44,9 @@ export const useRoomStore = create<RoomState & Action>()((set, get) => {
   socket.on("results", (results: Record<string, number>) => set({ results }));
 
   socket.on("gameData", (gameData: GameData) => {
-    const { duration, startTime, status } = gameData;
+    const { duration, startTime, status, rows, columns } = gameData;
     console.log("room store game data: ", duration, startTime, status);
-    set({ duration, startTime, status });
+    set({ duration, startTime, status, rows, columns });
   });
 
   socket.on("playerData", (playerData: PlayerData) => {

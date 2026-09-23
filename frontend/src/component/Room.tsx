@@ -22,6 +22,8 @@ export type GameData = {
   duration: number;
   startTime?: number;
   status: "running" | "finished" | "waiting";
+  rows: number;
+  columns: number;
 };
 
 export function Room({
@@ -40,6 +42,8 @@ export function Room({
   const player = useRoomStore((s) => s.players[clientId]);
   const status = useRoomStore((s) => s.status);
   const action = useRoomStore((s) => s.action);
+  const rows = useRoomStore((s) => s.rows);
+  const columns = useRoomStore((s) => s.columns);
 
   console.log("room.tsx players", players);
   console.log("room.tsx player", player);
@@ -59,9 +63,19 @@ export function Room({
         event.key === "ArrowLeft" ||
         event.key === "ArrowRight"
       ) {
+        const command =
+          event.key === "ArrowUp"
+            ? "up"
+            : event.key === "ArrowDown"
+              ? "down"
+              : event.key === "ArrowLeft"
+                ? "left"
+                : event.key === "ArrowRight"
+                  ? "right"
+                  : undefined;
         socket.emit("action", {
           roomId,
-          movement: event.key,
+          movement: command,
         });
       }
     }
@@ -88,7 +102,7 @@ export function Room({
                 <div>🍋 Role: {state.role}</div>
               </section>
 
-              <GameGrid playerData={state} />
+              <GameGrid playerData={state} rows={rows} columns={columns} />
             </div>
           ))
         : "Waiting..."}

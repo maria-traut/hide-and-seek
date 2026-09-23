@@ -19,6 +19,8 @@ type Game = {
   duration: number;
   startTime?: number;
   status: 'running' | 'finished' | 'waiting';
+  rows: number;
+  columns: number;
 };
 
 @Injectable()
@@ -90,7 +92,9 @@ export class GameService {
   }
 
   movePlayer(client: Socket, movement: string) {
-    console.log('Service Movement', movement);
+    const player = this.players.get(client.id);
+    const currentPosition = player?.position;
+    console.log('Service Movement', movement, currentPosition);
   }
 
   private async startGame(client: Socket, roomId: string) {
@@ -106,16 +110,20 @@ export class GameService {
       duration: 30,
       startTime: new Date().getTime(),
       status: 'running',
+      rows: 10,
+      columns: 10,
     });
 
     this.players.set(seekerId, {
       roomId,
       role: 'seeker',
+      position: { x: 0, y: 0 },
     });
 
     this.players.set(hiderId, {
       roomId,
       role: 'hider',
+      position: { x: 9, y: 9 },
     });
 
     // client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
@@ -135,7 +143,7 @@ export class GameService {
       opponentPosition: { x: 0, y: 0 },
     });
 
-    await this.countDown(30, client, roomId);
+    await this.countDown(30, client, roomId, 10, 10);
 
     client.nsp.to(roomId).emit('game-start');
   }
@@ -144,10 +152,12 @@ export class GameService {
     duration: number,
     client: Socket,
     roomId: string,
+    rows: number,
+    columns: number,
   ): Promise<void> {
     return new Promise((resolve) => {
       const interval = setInterval(() => {
-        this.game.set(roomId, { duration, status: 'running' });
+        this.game.set(roomId, { duration, status: 'running', rows, columns });
         console.log('countDown', duration);
         duration--;
 
@@ -155,7 +165,12 @@ export class GameService {
           clearInterval(interval);
           resolve();
         } else if (duration < 1) {
-          this.game.set(roomId, { duration, status: 'finished' });
+          this.game.set(roomId, {
+            duration,
+            status: 'finished',
+            rows,
+            columns,
+          });
           client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
         } else {
           client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
