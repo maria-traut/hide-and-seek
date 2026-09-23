@@ -30,7 +30,7 @@ export class GameService {
 
   private waitingRoom: string | null = null;
 
-  addPlayer(client: Socket) {
+  async addPlayer(client: Socket) {
     let roomId: string;
 
     if (this.waitingRoom === null) {
@@ -53,7 +53,7 @@ export class GameService {
     const room = client.nsp.adapter.rooms.get(roomId);
 
     if (room?.size === 2) {
-      this.startGame(client, roomId);
+      await this.startGame(client, roomId);
     }
   }
 
@@ -94,7 +94,77 @@ export class GameService {
   movePlayer(client: Socket, movement: string) {
     const player = this.players.get(client.id);
     const currentPosition = player?.position;
-    console.log('Service Movement', movement, currentPosition);
+    const roomId = [...client.rooms].find((room) => room !== client.id);
+    const gameData = this.game.get(roomId!);
+    const room = client.nsp.adapter.rooms.get(roomId!);
+
+    if (!room || room.size !== 2) {
+      return;
+    }
+    const opponentId = [...room].find((id) => id !== client.id)!;
+    console.log(
+      'Service Movement',
+      movement,
+      currentPosition,
+      gameData,
+      room,
+      opponentId,
+    );
+
+    if (gameData?.status === 'running') {
+      if (currentPosition) {
+        const newPosition = currentPosition;
+        if (movement === 'up') {
+          console.log(movement);
+          if ((currentPosition?.y ?? 0) > 0) {
+            const newY = (currentPosition?.y ?? 0) - 1;
+            console.log('movement up', newY);
+            newPosition.y = newY;
+          }
+        } else if (movement === 'down') {
+          console.log(movement);
+          if ((currentPosition?.y ?? 0) < (gameData?.columns ?? 0) - 1) {
+            const newY = (currentPosition?.y ?? 0) + 1;
+            console.log('movement down', newY);
+            newPosition.y = newY;
+          }
+        } else if (movement === 'left') {
+          console.log(movement);
+          if ((currentPosition?.x ?? 0) > 0) {
+            const newX = (currentPosition?.x ?? 0) - 1;
+            console.log('movement left', newX);
+            newPosition.x = newX;
+          }
+        } else if (movement === 'right') {
+          console.log(movement);
+          if ((currentPosition?.x ?? 0) < (gameData?.rows ?? 0) - 1) {
+            const newX = (currentPosition?.x ?? 0) + 1;
+            console.log('movement right', newX);
+            newPosition.x = newX;
+          }
+        }
+        console.log('currentPosition IF', newPosition);
+        this.players.set(client.id, {
+          ...player,
+          position: newPosition,
+        });
+
+        if (newPosition === this.players.get(opponentId)?.position) {
+          client.nsp.to(client.id).emit('playerAction', {
+            position: newPosition,
+            clientId: client.id,
+          });
+
+          client.nsp.to(opponentId).emit('playerAction', {
+            clientId: opponentId,
+            opponentPosition: newPosition,
+          });
+        } else {
+          client.nsp.to(opponentId).emit('gameEnd', { message: 'Seeker won!' });
+          client.nsp.to(client.id).emit('gameEnd', { message: 'Seeker won!' });
+        }
+      }
+    }
   }
 
   private async startGame(client: Socket, roomId: string) {
@@ -121,9 +191,9 @@ export class GameService {
     });
 
     this.players.set(hiderId, {
-      roomId,
       role: 'hider',
       position: { x: 9, y: 9 },
+      roomId,
     });
 
     // client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
@@ -171,11 +241,12 @@ export class GameService {
             rows,
             columns,
           });
+          console.log('FINISHED');
           client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
         } else {
           client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
         }
-      }, 1000);
+      }, 100);
     });
   }
 }

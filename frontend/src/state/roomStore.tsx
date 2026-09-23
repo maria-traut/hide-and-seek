@@ -45,7 +45,14 @@ export const useRoomStore = create<RoomState & Action>()((set, get) => {
 
   socket.on("gameData", (gameData: GameData) => {
     const { duration, startTime, status, rows, columns } = gameData;
-    console.log("room store game data: ", duration, startTime, status);
+    console.log(
+      "room store game data: ",
+      duration,
+      startTime,
+      status,
+      rows,
+      columns,
+    );
     set({ duration, startTime, status, rows, columns });
   });
 
@@ -59,6 +66,38 @@ export const useRoomStore = create<RoomState & Action>()((set, get) => {
     }));
   });
 
+  socket.on(
+    "playerAction",
+    (
+      playerData: Pick<
+        PlayerData,
+        "position" | "clientId" | "opponentPosition"
+      >,
+    ) => {
+      console.log("new Position: ", playerData, playerData.clientId);
+      if (playerData.position) {
+        set((state) => ({
+          players: {
+            ...state.players,
+            [playerData.clientId]: {
+              ...state.players[playerData.clientId],
+              position: playerData.position,
+            },
+          },
+        }));
+      } else {
+        set((state) => ({
+          players: {
+            ...state.players,
+            [playerData.clientId]: {
+              ...state.players[playerData.clientId],
+              opponentPosition: playerData.opponentPosition,
+            },
+          },
+        }));
+      }
+    },
+  );
   return {
     ...initialState,
 

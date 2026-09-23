@@ -17,9 +17,18 @@ export default function GameGrid({
   // const columns = 10;
   const color = role === "hider" ? "bg-green-500" : "bg-red-500";
   const opponentColor = role === "hider" ? "bg-red-500" : "bg-green-500";
+
+  const gridCols: Record<number, string> = {
+    5: "grid-cols-5",
+    10: "grid-cols-10",
+    15: "grid-cols-15",
+    20: "grid-cols-20",
+  };
   return (
     <>
-      <div id="game-grid" className={`grid grid-cols-${columns} gap-1`}>
+      <span>{position.x}</span>
+      <span>{position.y}</span>
+      <div id="game-grid" className={`grid ${gridCols[columns]} gap-1`}>
         {Array.from({ length: rows }, (_, row) => (
           <div key={row} className="row">
             {Array.from({ length: columns }, (_, column) => (
