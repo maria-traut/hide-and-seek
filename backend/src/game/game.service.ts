@@ -2,87 +2,76 @@ import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { Socket } from 'socket.io';
 
-type Role = 'seeker' | 'hider';
+import type {
+  Player,
+  Game,
+  PlayerRole,
+  PlayerPosition,
+  GameEndReason,
+  Movement,
+  GridSize,
+} from './game.type';
 
-type Position = {
-  x: number | undefined;
-  y: number | undefined;
-};
-
-type Player = {
-  roomId: string;
-  role?: Role;
-  position?: Position;
-};
-
-type Game = {
-  duration: number;
-  startTime?: number;
-  status: 'running' | 'finished' | 'waiting';
-  rows: number;
-  columns: number;
-};
+const MIN_GAME_DURATION = 5;
+const MAX_GAME_DURATION = 60;
+const GAME_DURATION = 30;
+const GRID_ROWS: GridSize = 10;
+const GRID_COLUMNS: GridSize = 10;
 
 @Injectable()
 export class GameService {
-  private readonly players = new Map<string, Player>();
-  private readonly game = new Map<string, Game>();
-
+  private readonly games = new Map<string, Game>();
   private waitingRoom: string | null = null;
 
-  async addPlayer(client: Socket) {
+  async addPlayer(client: Socket): Promise<string> {
     let roomId: string;
 
     if (this.waitingRoom === null) {
-      console.log('nobody waiting. you are the first.');
       roomId = randomUUID();
       this.waitingRoom = roomId;
+
+      console.log('Nobody waiting. Created room:', roomId);
     } else {
-      console.log('waiting room content', this.waitingRoom);
       roomId = this.waitingRoom;
       this.waitingRoom = null;
+
+      console.log('Joining waiting room:', roomId);
     }
 
-    void client.join(roomId);
-
-    this.players.set(client.id, {
-      roomId,
-      position: { x: undefined, y: undefined },
-    });
+    await client.join(roomId);
 
     const room = client.nsp.adapter.rooms.get(roomId);
 
     if (room?.size === 2) {
-      await this.startGame(client, roomId);
+      this.startGame(client, roomId);
     }
+
+    return roomId;
   }
 
   removePlayer(client: Socket) {
-    const player = this.players.get(client.id);
+    const roomId = [...client.rooms].find((room) => room !== client.id);
 
-    if (!player) {
+    if (!roomId) {
       return;
     }
-
-    const roomId = player.roomId;
-
-    this.players.delete(client.id);
 
     const room = client.nsp.adapter.rooms.get(roomId);
 
     if (!room || room.size === 0) {
+      this.games.delete(roomId);
+
       if (this.waitingRoom === roomId) {
         this.waitingRoom = null;
       }
+
       return;
     }
 
     if (room.size === 1) {
       const remainingClientId = [...room][0];
-      this.players.set(remainingClientId, {
-        roomId,
-      });
 
+      this.games.delete(roomId);
       this.waitingRoom = roomId;
 
       console.log(
@@ -91,162 +80,228 @@ export class GameService {
     }
   }
 
-  movePlayer(client: Socket, movement: string) {
-    const player = this.players.get(client.id);
-    const currentPosition = player?.position;
+  movePlayer(client: Socket, movement: Movement) {
     const roomId = [...client.rooms].find((room) => room !== client.id);
-    const gameData = this.game.get(roomId!);
-    const room = client.nsp.adapter.rooms.get(roomId!);
 
-    if (!room || room.size !== 2) {
+    if (!roomId) {
       return;
     }
-    const opponentId = [...room].find((id) => id !== client.id)!;
-    console.log(
-      'Service Movement',
-      movement,
-      currentPosition,
-      gameData,
-      room,
-      opponentId,
-    );
-
-    if (gameData?.status === 'running') {
-      if (currentPosition) {
-        const newPosition = currentPosition;
-        if (movement === 'up') {
-          console.log(movement);
-          if ((currentPosition?.y ?? 0) > 0) {
-            const newY = (currentPosition?.y ?? 0) - 1;
-            console.log('movement up', newY);
-            newPosition.y = newY;
-          }
-        } else if (movement === 'down') {
-          console.log(movement);
-          if ((currentPosition?.y ?? 0) < (gameData?.columns ?? 0) - 1) {
-            const newY = (currentPosition?.y ?? 0) + 1;
-            console.log('movement down', newY);
-            newPosition.y = newY;
-          }
-        } else if (movement === 'left') {
-          console.log(movement);
-          if ((currentPosition?.x ?? 0) > 0) {
-            const newX = (currentPosition?.x ?? 0) - 1;
-            console.log('movement left', newX);
-            newPosition.x = newX;
-          }
-        } else if (movement === 'right') {
-          console.log(movement);
-          if ((currentPosition?.x ?? 0) < (gameData?.rows ?? 0) - 1) {
-            const newX = (currentPosition?.x ?? 0) + 1;
-            console.log('movement right', newX);
-            newPosition.x = newX;
-          }
-        }
-        console.log('currentPosition IF', newPosition);
-        this.players.set(client.id, {
-          ...player,
-          position: newPosition,
-        });
-
-        if (newPosition === this.players.get(opponentId)?.position) {
-          client.nsp.to(client.id).emit('playerAction', {
-            position: newPosition,
-            clientId: client.id,
-          });
-
-          client.nsp.to(opponentId).emit('playerAction', {
-            clientId: opponentId,
-            opponentPosition: newPosition,
-          });
-        } else {
-          client.nsp.to(opponentId).emit('gameEnd', { message: 'Seeker won!' });
-          client.nsp.to(client.id).emit('gameEnd', { message: 'Seeker won!' });
-        }
-      }
-    }
-  }
-
-  private async startGame(client: Socket, roomId: string) {
+    const game = this.games.get(roomId);
     const room = client.nsp.adapter.rooms.get(roomId);
 
     if (!room || room.size !== 2) {
       return;
     }
-    console.log('startGame', room);
-    const [seekerId, hiderId] = [...room];
 
-    this.game.set(roomId, {
-      duration: 30,
-      startTime: new Date().getTime(),
-      status: 'running',
-      rows: 10,
-      columns: 10,
+    if (!game || game.status !== 'running') {
+      return;
+    }
+
+    const player = game.players[client.id];
+
+    if (!player) {
+      return;
+    }
+
+    const currentPosition = player.position;
+
+    const newPosition: PlayerPosition = {
+      ...currentPosition,
+    };
+
+    switch (movement) {
+      case 'up':
+        if (newPosition.y > 0) {
+          newPosition.y--;
+        }
+        break;
+
+      case 'down':
+        if (newPosition.y < game.columns - 1) {
+          newPosition.y++;
+        }
+        break;
+
+      case 'left':
+        if (newPosition.x > 0) {
+          newPosition.x--;
+        }
+        break;
+
+      case 'right':
+        if (newPosition.x < game.rows - 1) {
+          newPosition.x++;
+        }
+        break;
+
+      default:
+        return;
+    }
+
+    const playerMoved =
+      newPosition.x !== currentPosition.x ||
+      newPosition.y !== currentPosition.y;
+
+    if (!playerMoved) {
+      return;
+    }
+
+    const updatedPlayer: Player = {
+      ...player,
+      position: newPosition,
+    };
+
+    const updatedGame: Game = {
+      ...game,
+      players: {
+        ...game.players,
+        [client.id]: updatedPlayer,
+      },
+    };
+
+    this.games.set(roomId, updatedGame);
+
+    client.nsp.to(roomId).emit('playerAction', {
+      clientId: client.id,
+      position: newPosition,
     });
 
-    this.players.set(seekerId, {
-      roomId,
-      role: 'seeker',
-      position: { x: 0, y: 0 },
-    });
+    const opponentId = [...room].find((id) => id !== client.id);
 
-    this.players.set(hiderId, {
-      role: 'hider',
-      position: { x: 9, y: 9 },
-      roomId,
-    });
+    if (!opponentId) {
+      return;
+    }
 
-    // client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
+    const opponent = updatedGame.players[opponentId];
 
-    client.nsp.to(seekerId).emit('playerData', {
-      role: 'seeker',
-      clientId: seekerId,
-      position: { x: 0, y: 0 },
-      roomId: roomId,
-      opponentPosition: { x: 9, y: 9 },
-    });
-    client.nsp.to(hiderId).emit('playerData', {
-      role: 'hider',
-      clientId: hiderId,
-      position: { x: 9, y: 9 },
-      roomId: roomId,
-      opponentPosition: { x: 0, y: 0 },
-    });
+    if (!opponent) {
+      return;
+    }
 
-    await this.countDown(30, client, roomId, 10, 10);
+    const samePosition =
+      newPosition.x === opponent.position.x &&
+      newPosition.y === opponent.position.y;
 
-    client.nsp.to(roomId).emit('game-start');
+    if (samePosition) {
+      this.endGame(client, roomId, 'caught');
+    }
   }
 
-  private async countDown(
-    duration: number,
-    client: Socket,
-    roomId: string,
-    rows: number,
-    columns: number,
-  ): Promise<void> {
-    return new Promise((resolve) => {
-      const interval = setInterval(() => {
-        this.game.set(roomId, { duration, status: 'running', rows, columns });
-        console.log('countDown', duration);
-        duration--;
+  private startGame(client: Socket, roomId: string) {
+    const room = client.nsp.adapter.rooms.get(roomId);
 
-        if (duration < 0) {
-          clearInterval(interval);
-          resolve();
-        } else if (duration < 1) {
-          this.game.set(roomId, {
-            duration,
-            status: 'finished',
-            rows,
-            columns,
-          });
-          console.log('FINISHED');
-          client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
-        } else {
-          client.nsp.to(roomId).emit('gameData', this.game.get(roomId));
-        }
-      }, 100);
+    if (!room || room.size !== 2) {
+      return;
+    }
+
+    const rows = GRID_ROWS;
+    const columns = GRID_COLUMNS;
+    const duration = Math.min(
+      Math.max(GAME_DURATION, MIN_GAME_DURATION),
+      MAX_GAME_DURATION,
+    );
+
+    const [player1Id, player2Id] = [...room];
+
+    const corners: PlayerPosition[] = [
+      { x: 0, y: 0 }, // top-left
+      { x: 0, y: columns - 1 }, // top-right
+      { x: rows - 1, y: 0 }, // bottom-left
+      { x: rows - 1, y: columns - 1 }, // bottom-right
+    ];
+
+    const seekerPosition = corners[Math.floor(Math.random() * corners.length)];
+
+    const hiderPosition = {
+      x: rows - 1 - seekerPosition.x,
+      y: columns - 1 - seekerPosition.y,
+    };
+    const player1IsSeeker = Math.random() < 0.5;
+
+    const seekerId = player1IsSeeker ? player1Id : player2Id;
+    const hiderId = player1IsSeeker ? player2Id : player1Id;
+
+    const seeker: Player = {
+      clientId: seekerId,
+      role: 'seeker',
+      position: seekerPosition,
+    };
+
+    const hider: Player = {
+      clientId: hiderId,
+      role: 'hider',
+      position: hiderPosition,
+    };
+
+    const game: Game = {
+      duration,
+      status: 'running',
+      rows,
+      columns,
+      players: {
+        [seekerId]: seeker,
+        [hiderId]: hider,
+      },
+    };
+
+    this.games.set(roomId, game);
+
+    client.nsp.to(roomId).emit('gameData', game);
+
+    this.startGameTimer(client, roomId);
+  }
+
+  private endGame(client: Socket, roomId: string, reason: GameEndReason) {
+    const game = this.games.get(roomId);
+
+    if (!game || game.status !== 'running') {
+      return;
+    }
+
+    const winner: PlayerRole = reason === 'caught' ? 'seeker' : 'hider';
+
+    const finishedGame: Game = {
+      ...game,
+      duration: 0,
+      status: 'finished',
+      winner,
+    };
+
+    this.games.set(roomId, finishedGame);
+
+    client.nsp.to(roomId).emit('gameData', finishedGame);
+
+    client.nsp.to(roomId).emit('gameEnd', {
+      reason,
+      winner,
     });
+  }
+
+  private startGameTimer(client: Socket, roomId: string) {
+    const interval = setInterval(() => {
+      const game = this.games.get(roomId);
+
+      if (!game || game.status !== 'running') {
+        clearInterval(interval);
+        return;
+      }
+
+      const duration = game.duration - 1;
+
+      if (duration <= 0) {
+        clearInterval(interval);
+        this.endGame(client, roomId, 'timeout');
+        return;
+      }
+
+      const updatedGame: Game = {
+        ...game,
+        duration,
+      };
+
+      this.games.set(roomId, updatedGame);
+
+      client.nsp.to(roomId).emit('gameData', updatedGame);
+    }, 1000);
   }
 }
