@@ -1,14 +1,19 @@
 import { useEffect } from 'react';
 import { useRoomStore } from '../store/room.store';
 import GameGrid from './GameGrid';
+import { useShallow } from 'zustand/react/shallow';
 
 export function Room() {
-  const roomId = useRoomStore((s) => s.roomId);
-  const clientId = useRoomStore((s) => s.clientId);
-  const connected = useRoomStore((s) => s.connected);
-  const game = useRoomStore((s) => s.game);
-  const gameStatus = useRoomStore((s) => s.game?.status);
-  const sendMovement = useRoomStore((s) => s.sendMovement);
+  const { roomId, clientId, connected, game } = useRoomStore(
+    useShallow((state) => ({
+      roomId: state.roomId,
+      clientId: state.clientId,
+      connected: state.connected,
+      game: state.game,
+    })),
+  );
+  const gameStatus = game?.status;
+  const sendMovement = useRoomStore((state) => state.sendMovement);
 
   useEffect(() => {
     function handleKeydown(event: KeyboardEvent) {
