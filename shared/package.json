@@ -1,0 +1,12 @@
+{
+	"name": "@hide-and-seek/shared",
+	"type": "module",
+	"version": "0.0.1",
+	"private": true,
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"default": "./src/index.ts"
+		}
+	}
+}

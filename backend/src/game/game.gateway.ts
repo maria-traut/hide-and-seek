@@ -8,8 +8,8 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { GameService } from './game.service';
-import { Movement } from './game.type';
+import { GameService } from './game.service.js';
+import type { Movement } from '@hide-and-seek/shared';
 
 @WebSocketGateway({
   cors: {

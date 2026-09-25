@@ -7,10 +7,11 @@ import type {
   Game,
   PlayerRole,
   PlayerPosition,
-  GameEndReason,
   Movement,
   GridSize,
-} from './game.type';
+} from '@hide-and-seek/shared';
+
+import type { GameEndReason } from './game.type.js';
 
 const MIN_GAME_DURATION = 5;
 const MAX_GAME_DURATION = 60;

@@ -1,5 +1,5 @@
-import { GRID_SIZE_CLASSES } from '../type/game.type';
-import type { GridSize, Player } from '../type/game.type';
+import { GRID_SIZE_CLASSES } from '@hide-and-seek/shared';
+import type { GridSize, Player } from '@hide-and-seek/shared';
 
 type GameGridProps = {
   players: Player[];

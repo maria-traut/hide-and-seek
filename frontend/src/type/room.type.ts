@@ -1,4 +1,4 @@
-import type { Game, Movement } from './game.type';
+import type { Game, Movement } from '@hide-and-seek/shared';
 
 export type RoomState = {
   connected: boolean;
