@@ -13,7 +13,7 @@ import type { Movement } from '@hide-and-seek/shared';
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:5173',
+    origin: '*',
   },
 })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
