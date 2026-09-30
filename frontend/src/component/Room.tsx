@@ -1,115 +1,111 @@
-import { useEffect } from "react";
-import { useRoomStore } from "../state/roomStore";
-import { socket } from "../socket";
-import GameGrid from "./GameGrid";
+import { useEffect } from 'react';
+import { useRoomStore } from '../store/room.store';
+import GameGrid from './GameGrid';
+import { useShallow } from 'zustand/react/shallow';
 
-export type PlayerRole = "seeker" | "hider";
+export function Room() {
+  const { roomId, clientId, connected, game } = useRoomStore(
+    useShallow((state) => ({
+      roomId: state.roomId,
+      clientId: state.clientId,
+      connected: state.connected,
+      game: state.game,
+    })),
+  );
+  const gameStatus = game?.status;
+  const sendMovement = useRoomStore((state) => state.sendMovement);
 
-type Position = {
-  x: number;
-  y: number;
-};
-
-// type ClientState = {
-//   role: PlayerRole;
-//   clientId: string;
-//   position: Position;
-//   roomId: string;
-//   opponentPosition: Position;
-// };
-
-export type PlayerData = {
-  role: PlayerRole;
-  clientId: string;
-  position: Position;
-  roomId: string;
-  opponentPosition: Position;
-};
-
-export type GameData = {
-  duration: number;
-  startTime?: number;
-  status: "running" | "finished" | "waiting";
-};
-
-export function Room({
-  roomId,
-  clientId,
-}: {
-  roomId: string;
-  clientId: string;
-}) {
-  // const results = useRoomStore((s) => s.results);
-  const connected = useRoomStore((s) => s.connected);
-  const joinRoom = useRoomStore((s) => s.joinRoom);
-  const updateResults = useRoomStore((s) => s.updateResults);
-  const duration = useRoomStore((s) => s.duration);
-  const players = useRoomStore((s) => s.players);
-  const player = useRoomStore((s) => s.players[clientId]);
-  // const startTime = useRoomStore((s) => s.startTime);
-  const status = useRoomStore((s) => s.status);
-  //   const action = useRoomStore((s) => s.action);
-  // const [clientStates, setClientStates] = useState(
-  //   new Map<string, ClientState>(),
-  // );
-  console.log("room.tsx players", players);
-  console.log("room.tsx player", player);
   useEffect(() => {
-    updateResults({ test: 4 });
-    joinRoom(roomId);
+    function handleKeydown(event: KeyboardEvent) {
+      const movement =
+        event.key === 'ArrowUp'
+          ? 'up'
+          : event.key === 'ArrowDown'
+            ? 'down'
+            : event.key === 'ArrowLeft'
+              ? 'left'
+              : event.key === 'ArrowRight'
+                ? 'right'
+                : null;
 
-    // socket.on("playerData", (playerData: PlayerData) => {
-    //   const { role, clientId, position, opponentPosition } = playerData;
-    //   console.log(`you are ${role}`);
+      if (movement && gameStatus === 'running') {
+        sendMovement(movement);
+      }
+    }
 
-    //   setClientStates((prev) => {
-    //     const next = new Map(prev);
+    window.addEventListener('keydown', handleKeydown);
 
-    //     next.set(clientId, {
-    //       role,
-    //       clientId,
-    //       position,
-    //       roomId,
-    //       opponentPosition,
-    //     });
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  }, [sendMovement, gameStatus]);
 
-    //     return next;
-    //   });
-    // });
+  if (!game) {
+    return <div>Waiting...</div>;
+  }
 
-    socket.on("game-start", () => {
-      console.log("game-start");
-    });
-  }, [updateResults, connected, roomId, joinRoom]);
+  const currentPlayer = clientId ? game.players[clientId] : undefined;
 
-  // const clientState = Array.from(clientStates.entries());
-  // const playerData = clientStates.values().next().value;
-  // console.log("client state client state", clientState);
-  // console.log("client states values", clientStates.values().next().value);
-  // console.log("client states", clientStates);
+  const gameFinished = game.status === 'finished';
+
+  const isWinner = gameFinished && currentPlayer?.role === game.winner;
+
   return (
     <div>
+      <button
+        onClick={() => window.location.reload()}
+        className="rounded bg-gray-500 px-4 py-2 font-bold text-white hover:bg-gray-600"
+      >
+        Back to Lobby
+      </button>
       <h3 className="text-2xl text-red-400 dark:text-red-100">
-        Game Status: {connected ? "Live" : "Reconnecting..."}
+        Game Status: {connected ? 'Live' : 'Reconnecting...'}
       </h3>
-      <ul>
-        <li>Duration: {duration}</li>
-        <li>Status: {status}</li>
-      </ul>
-      {/* <button onClick={() => action("pomodoro")}>Pomodoro</button> */}
-      {Object.entries(players).length > 0
-        ? Object.entries(players).map(([clientId, state]) => (
-            <div key={clientId}>
-              <section className="my-3 flex items-center justify-between">
-                <div>🍝 Client: {clientId}</div>
-                <div>🫒 Room: {state.roomId}</div>
-                <div>🍋 Role: {state.role}</div>
-              </section>
 
-              <GameGrid playerData={state} />
-            </div>
-          ))
-        : "Waiting..."}
+      {gameFinished && game.winner && (
+        <div>
+          <h4 className="text-3xl my-5">
+            {isWinner ? '🎉 You won!' : '😩 You lost!'}
+          </h4>
+
+          <p>Winner: {game.winner}</p>
+        </div>
+      )}
+
+      <ul>
+        {game.duration > 0 && <li>Time remaining: {game.duration}</li>}
+        <li>Status: {game.status}</li>
+        <li>Room: {roomId}</li>
+      </ul>
+
+      {Object.values(game.players).map((player) => (
+        <section
+          key={player.clientId}
+          className="my-3 flex items-center justify-between"
+        >
+          <div>
+            🍝 Client: {player.clientId}{' '}
+            {clientId === player.clientId && (
+              <span
+                className={`font-bold ${
+                  player.role === 'hider'
+                    ? 'text-green-400 dark:text-green-600'
+                    : 'text-red-400 dark:text-red-600'
+                }`}
+              >
+                (YOU)
+              </span>
+            )}
+          </div>
+          <div>🍋 Role: {player.role}</div>
+        </section>
+      ))}
+
+      <GameGrid
+        players={Object.values(game.players)}
+        rows={game.rows}
+        columns={game.columns}
+      />
     </div>
   );
 }

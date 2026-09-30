@@ -8,7 +8,8 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { GameService } from './game.service';
+import { GameService } from './game.service.js';
+import type { Movement } from '@hide-and-seek/shared';
 
 @WebSocketGateway({
   cors: {
@@ -21,22 +22,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(private readonly gameService: GameService) {}
 
-  handleConnection(client: Socket) {
-    console.log('connected client', client.id);
-    this.gameService.addPlayer(client);
+  async handleConnection(client: Socket) {
+    const roomId = await this.gameService.addPlayer(client);
+
+    client.emit('clientId', client.id);
+    client.emit('roomAssigned', roomId);
   }
 
   handleDisconnect(client: Socket) {
-    console.log('disconnected client', client.id);
     this.gameService.removePlayer(client);
   }
 
-  @SubscribeMessage('clientConnect')
-  handleClientConnect(
-    @MessageBody() textFromClient: string,
-    @ConnectedSocket() socket: Socket,
+  @SubscribeMessage('action')
+  handleClientAction(
+    @MessageBody() actionData: { movement: Movement },
+    @ConnectedSocket() client: Socket,
   ) {
-    console.log('textFromClient', textFromClient);
-    socket.emit('responseFromServer', 'hello client');
+    this.gameService.movePlayer(client, actionData.movement);
   }
 }

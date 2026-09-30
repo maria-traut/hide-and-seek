@@ -1,46 +1,54 @@
-import type { PlayerData } from "./Room";
-import { Fragment } from "react/jsx-runtime";
+import { GRID_SIZE_CLASSES } from '@hide-and-seek/shared';
+import type { GridSize, Player } from '@hide-and-seek/shared';
 
-export default function GameGrid({
-  playerData,
-}: {
-  playerData: PlayerData | undefined;
-}) {
-  if (!playerData) return;
-  const { position, opponentPosition, role } = playerData;
-  console.log("position", position);
-  const rows = 10;
-  const columns = 10;
-  const color = role === "hider" ? "bg-green-500" : "bg-red-500";
-  const opponentColor = role === "hider" ? "bg-red-500" : "bg-green-500";
+type GameGridProps = {
+  players: Player[];
+  rows: GridSize;
+  columns: GridSize;
+};
+
+export default function GameGrid({ players, rows, columns }: GameGridProps) {
+  const getPlayerAtPosition = (row: number, column: number) => {
+    return players.find(
+      (player) => player.position.x === row && player.position.y === column,
+    );
+  };
+
   return (
-    <>
-      <div id="game-grid" className="grid grid-cols-10 gap-1">
+    <div>
+      <div
+        id="game-grid"
+        className={`grid ${GRID_SIZE_CLASSES[columns]} gap-1`}
+      >
         {Array.from({ length: rows }, (_, row) => (
           <div key={row} className="row">
-            {Array.from({ length: columns }, (_, column) => (
-              <Fragment key={column}>
+            {Array.from({ length: columns }, (_, column) => {
+              const player = getPlayerAtPosition(row, column);
+
+              const color =
+                player?.role === 'hider'
+                  ? 'bg-green-400 dark:bg-green-600'
+                  : player?.role === 'seeker'
+                    ? 'bg-red-400 dark:bg-red-600'
+                    : '';
+
+              return (
                 <div
-                  className={`cell aspect-square border ${
-                    position && position.x === row && position.y === column
-                      ? color
-                      : ""
-                  } ${
-                    opponentPosition &&
-                    opponentPosition.x === row &&
-                    opponentPosition.y === column
-                      ? opponentColor
-                      : ""
-                  }`}
+                  key={`${row}-${column}`}
+                  className={`cell aspect-square border ${color}`}
                 >
-                  x: {row} <br />
-                  y: {column}
+                  <span>
+                    x: {row}
+                    <br />
+                    y: {column}
+                  </span>
                 </div>
-              </Fragment>
-            ))}
+              );
+            })}
+            ,
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 }
