@@ -8,13 +8,16 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "dev": "nest start --watch",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
@@ -33,7 +36,6 @@
     "socket.io": "^4.8.4"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.7",
     "@eslint/js": "^9.39.5",
     "@nestjs/cli": "^12.0.12",
     "@nestjs/schematics": "^12.0.13",
@@ -43,7 +45,7 @@
     "@types/supertest": "^7.2.1",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.7",
+    "eslint-plugin-import": "^2.32.0",
     "globals": "^17.14.0",
     "prettier": "^3.10.0",
     "source-map-support": "^0.5.21",
@@ -52,5 +54,8 @@
     "typescript-eslint": "^8.72.2",
     "vite": "^8.3.8",
     "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

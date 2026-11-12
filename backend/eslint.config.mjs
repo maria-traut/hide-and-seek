@@ -1,35 +1,45 @@
-// @ts-check
-import eslint from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+import js from "@eslint/js";
+import { defineConfig, globalIgnores } from "eslint/config";
+import prettier from "eslint-config-prettier/flat";
+import importPlugin from "eslint-plugin-import";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 
-export default tseslint.config(
-  {
-    ignores: ['eslint.config.mjs'],
-  },
-  eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
-  eslintPluginPrettierRecommended,
-  {
-    languageOptions: {
-      globals: {
-        ...globals.node,
-        ...globals.jest,
-      },
-      sourceType: 'commonjs',
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  },
-  {
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      'prettier/prettier': ['error', { endOfLine: 'auto' }],
-    },
-  },
-);
+export default defineConfig([
+	globalIgnores(["dist/**", "coverage/**", "eslint.config.mjs"]),
+	js.configs.recommended,
+	tseslint.configs.recommendedTypeChecked,
+	{
+		plugins: { import: importPlugin },
+		languageOptions: {
+			globals: globals.node,
+			parserOptions: {
+				projectService: true,
+				tsconfigRootDir: import.meta.dirname,
+			},
+		},
+		rules: {
+			"import/order": [
+				"error",
+				{
+					groups: [["builtin", "external"], "internal", ["parent", "sibling", "index"]],
+					pathGroups: [{ pattern: "@/**", group: "internal" }],
+					"newlines-between": "always",
+					alphabetize: { order: "asc", caseInsensitive: true },
+					named: true,
+				},
+			],
+			"import/no-duplicates": "error",
+			"no-restricted-imports": [
+				"error",
+				{ patterns: [{ regex: "(^|/)\\.\\./", message: 'Use "@/…" instead of "../".' }] },
+			],
+			"@typescript-eslint/no-explicit-any": "error",
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{ vars: "all", args: "none", ignoreRestSiblings: true, caughtErrors: "all" },
+			],
+		},
+	},
+	prettier,
+]);
