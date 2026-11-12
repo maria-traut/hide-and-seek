@@ -196,6 +196,10 @@ export class GameService {
 
 		const [player1Id, player2Id] = [...room];
 
+		if (!player1Id || !player2Id) {
+			return;
+		}
+
 		const corners: PlayerPosition[] = [
 			{ x: 0, y: 0 }, // top-left
 			{ x: 0, y: columns - 1 }, // top-right
@@ -204,6 +208,10 @@ export class GameService {
 		];
 
 		const seekerPosition = corners[Math.floor(Math.random() * corners.length)];
+
+		if (!seekerPosition) {
+			return;
+		}
 
 		const hiderPosition = {
 			x: rows - 1 - seekerPosition.x,

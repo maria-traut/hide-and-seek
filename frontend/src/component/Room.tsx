@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
 
+import { useRoomStore } from "@/store/room.store";
+
 import GameGrid from "./GameGrid";
-import { useRoomStore } from "../store/room.store";
 
 export function Room() {
 	const { roomId, clientId, connected, game } = useRoomStore(

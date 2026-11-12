@@ -1,8 +1,8 @@
 import type { Game, PlayerPosition } from "@hide-and-seek/shared";
 import { create } from "zustand";
 
-import { socket } from "../socket";
-import type { RoomActions, RoomState } from "../type/room.type";
+import { socket } from "@/socket";
+import type { RoomActions, RoomState } from "@/type/room.type";
 
 const initialState = {
 	connected: false,
