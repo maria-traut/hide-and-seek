@@ -115,7 +115,7 @@ export class GameService {
 				break;
 
 			case "down":
-				if (newPosition.y < game.columns - 1) {
+				if (newPosition.y < game.rows - 1) {
 					newPosition.y++;
 				}
 				break;
@@ -127,7 +127,7 @@ export class GameService {
 				break;
 
 			case "right":
-				if (newPosition.x < game.rows - 1) {
+				if (newPosition.x < game.columns - 1) {
 					newPosition.x++;
 				}
 				break;
@@ -202,9 +202,9 @@ export class GameService {
 
 		const corners: PlayerPosition[] = [
 			{ x: 0, y: 0 }, // top-left
-			{ x: 0, y: columns - 1 }, // top-right
-			{ x: rows - 1, y: 0 }, // bottom-left
-			{ x: rows - 1, y: columns - 1 }, // bottom-right
+			{ x: columns - 1, y: 0 }, // top-right
+			{ x: 0, y: rows - 1 }, // bottom-left
+			{ x: columns - 1, y: rows - 1 }, // bottom-right
 		];
 
 		const seekerPosition = corners[Math.floor(Math.random() * corners.length)];
@@ -214,8 +214,8 @@ export class GameService {
 		}
 
 		const hiderPosition = {
-			x: rows - 1 - seekerPosition.x,
-			y: columns - 1 - seekerPosition.y,
+			x: columns - 1 - seekerPosition.x,
+			y: rows - 1 - seekerPosition.y,
 		};
 		const player1IsSeeker = Math.random() < 0.5;
 

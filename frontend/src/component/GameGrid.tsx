@@ -9,40 +9,37 @@ type GameGridProps = {
 
 export default function GameGrid({ players, rows, columns }: GameGridProps) {
 	const getPlayerAtPosition = (row: number, column: number) => {
-		return players.find((player) => player.position.x === row && player.position.y === column);
+		return players.find((player) => player.position.x === column && player.position.y === row);
 	};
 
 	return (
 		<div>
 			<div id="game-grid" className={`grid ${GRID_SIZE_CLASSES[columns]} gap-1`}>
-				{Array.from({ length: rows }, (_, row) => (
-					<div key={row} className="row">
-						{Array.from({ length: columns }, (_, column) => {
-							const player = getPlayerAtPosition(row, column);
+				{Array.from({ length: rows }, (_, row) =>
+					Array.from({ length: columns }, (_, column) => {
+						const player = getPlayerAtPosition(row, column);
 
-							const color =
-								player?.role === "hider"
-									? "bg-green-400 dark:bg-green-600"
-									: player?.role === "seeker"
-										? "bg-red-400 dark:bg-red-600"
-										: "";
+						const color =
+							player?.role === "hider"
+								? "bg-green-400 dark:bg-green-600"
+								: player?.role === "seeker"
+									? "bg-red-400 dark:bg-red-600"
+									: "";
 
-							return (
-								<div
-									key={`${row}-${column}`}
-									className={`cell aspect-square border ${color}`}
-								>
-									<span>
-										x: {row}
-										<br />
-										y: {column}
-									</span>
-								</div>
-							);
-						})}
-						,
-					</div>
-				))}
+						return (
+							<div
+								key={`${row}-${column}`}
+								className={`cell aspect-square border ${color}`}
+							>
+								<span>
+									x: {column}
+									<br />
+									y: {row}
+								</span>
+							</div>
+						);
+					}),
+				)}
 			</div>
 		</div>
 	);
