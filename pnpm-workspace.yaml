@@ -2,6 +2,3 @@ packages:
   - backend
   - frontend
   - shared
-
-allowBuilds:
-  "@parcel/watcher": false
