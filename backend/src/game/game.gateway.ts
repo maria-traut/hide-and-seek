@@ -1,43 +1,44 @@
+import type { Movement } from "@hide-and-seek/shared";
 import {
-  ConnectedSocket,
-  MessageBody,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  SubscribeMessage,
-  WebSocketGateway,
-  WebSocketServer,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { GameService } from './game.service.js';
-import type { Movement } from '@hide-and-seek/shared';
+	ConnectedSocket,
+	MessageBody,
+	OnGatewayConnection,
+	OnGatewayDisconnect,
+	SubscribeMessage,
+	WebSocketGateway,
+	WebSocketServer,
+} from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
+
+import { GameService } from "./game.service.js";
 
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-  },
+	cors: {
+		origin: "*",
+	},
 })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
-  server!: Server;
+	@WebSocketServer()
+	server!: Server;
 
-  constructor(private readonly gameService: GameService) {}
+	constructor(private readonly gameService: GameService) {}
 
-  async handleConnection(client: Socket) {
-    const roomId = await this.gameService.addPlayer(client);
+	async handleConnection(client: Socket) {
+		const roomId = await this.gameService.addPlayer(client);
 
-    client.emit('clientId', client.id);
-    client.emit('roomAssigned', roomId);
-  }
+		client.emit("clientId", client.id);
+		client.emit("roomAssigned", roomId);
+	}
 
-  handleDisconnect(client: Socket) {
-    this.gameService.removePlayer(client);
-  }
+	handleDisconnect(client: Socket) {
+		this.gameService.removePlayer(client);
+	}
 
-  @SubscribeMessage('action')
-  handleClientAction(
-    @MessageBody() actionData: { movement: Movement },
-    @ConnectedSocket() client: Socket,
-  ) {
-    this.gameService.movePlayer(client, actionData.movement);
-  }
+	@SubscribeMessage("action")
+	handleClientAction(
+		@MessageBody() actionData: { movement: Movement },
+		@ConnectedSocket() client: Socket,
+	) {
+		this.gameService.movePlayer(client, actionData.movement);
+	}
 }
