@@ -1,1 +1,1 @@
-export type GameEndReason = 'caught' | 'timeout';
+export type GameEndReason = "caught" | "timeout";
